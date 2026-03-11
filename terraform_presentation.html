@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terraform: Infrastructure as Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #123df7 0%, #000000 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .presentation-container {
+            width: 100%;
+            max-width: 1200px;
+            background: #fffeff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 80px 60px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Slide Backgrounds */
+        .slide-title {
+            background: linear-gradient(135deg, #123df7 0%, #000000 100%);
+            color: #fffeff;
+        }
+
+        .slide-part {
+            background: linear-gradient(135deg, #ffc700 0%, #ff4650 100%);
+            color: #000000;
+        }
+
+        .slide-content {
+            background: #fffeff;
+            color: #000000;
+        }
+
+        .slide-demo {
+            background: linear-gradient(135deg, #123df7 0%, #000000 100%);
+            color: #fffeff;
+        }
+
+        .slide-end {
+            background: linear-gradient(135deg, #ffc700 0%, #ff4650 100%);
+            color: #000000;
+        }
+
+        .slide-end h2 {
+            color: #000000;
+        }
+
+        .slide-end li, .slide-end strong {
+            color: #000000;
+        }
+
+        .slide-end .highlight {
+            background: rgba(18, 61, 247, 0.1);
+            border-color: #123df7;
+            color: #000000;
+        }
+
+        .slide-end p {
+            color: #000000;
+        }
+
+        h1 {
+            font-size: 4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            border-bottom: 3px solid currentColor;
+            padding-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 1.8em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 1.5em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .time-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+
+        ul, ol {
+            margin-left: 40px;
+            line-height: 1.8;
+            font-size: 1.2em;
+        }
+
+        li {
+            margin-bottom: 15px;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-left: 4px solid currentColor;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            margin: 20px 0;
+            line-height: 1.6;
+            white-space: pre;  /* ← Add this */
+        }
+
+        .column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .comparison-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .comparison-box h4 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            margin: 20px 0;
+            opacity: 0.8;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #123df7 0%, #000000 100%);
+            color: #fffeff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(18, 61, 247, 0.4);
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .workflow-step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .workflow-step strong {
+            color: #fff;
+            font-size: 1.2em;
+        }
+
+        .slide-content .workflow-step {
+            background: rgba(18, 61, 247, 0.1);
+            border-left-color: #123df7;
+        }
+
+        .slide-content .workflow-step strong {
+            color: #123df7;
+        }
+
+        .slide-content .workflow-step p {
+            color: #000000;
+        }
+
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .benefit-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .benefit-card strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5em; }
+            h2 { font-size: 1.8em; }
+            .slide { padding: 40px 30px; }
+            .column-layout { grid-template-columns: 1fr; }
+            .benefit-grid { grid-template-columns: 1fr; }
+        }
+
+        .logo-terraform {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .part-number {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        strong {
+            font-weight: 600;
+        }
+
+        .slide-image {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 30px 0;
+            border-radius: 10px;
+            object-fit: contain;
+        }
+
+        .agenda-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .agenda-item {
+            background: rgba(255, 255, 254, 0.2);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid #fffeff;
+        }
+
+        .agenda-item h4 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #fffeff;
+        }
+
+        .agenda-item p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: rgba(255, 255, 254, 0.95);
+        }
+
+        .slide-part .agenda-item h4,
+        .slide-part .agenda-item p {
+            color: #fffeff;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- Slide 1: Title -->
+        <div class="slide slide-title active">
+        <div style="align-self: flex-start;">
+            <img src="images/img_6.png" alt="Logo" style="height: 80px; object-fit: contain;">
+        </div>
+
+            <!-- Main content: text left, image right -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1; margin-top: 20px;">
+                <div>
+                    <h1>Terraform</h1>
+                    <p class="subtitle">Infrastructure as Code</p>
+                    <p class="subtitle" style="margin-top: 40px; font-size: 1.2em;">A Complete Guide to Managing Cloud Infrastructure</p>
+                    <br><br><br>
+                    <p class="subtitle" style="font-size: 1.1em;">Oleksandr Shynkarov</p>
+                    <p class="subtitle" style="font-size: 1em;">Data Engineer</p>
+                </div>
+                <img src="images/img_7.png" alt="Right Image" style="height: 400px; object-fit: contain;">
+            </div>
+        </div>
+        <!-- Slide 2: Agenda -->
+        <div class="slide slide-part" style="background: linear-gradient(135deg, #123df7 0%, #000000 100%); color: #000000;">
+            <h2 style="color: #fffeff; border-bottom-color: #fffeff;">Agenda</h2>
+            <div class="agenda-grid">
+                <div class="agenda-item">
+                    <h4>Part 1</h4>
+                    <p><strong>The Problem and the Solution</strong><br>Why we need Infrastructure as Code</p>
+                </div>
+                <div class="agenda-item">
+                    <h4>Part 2</h4>
+                    <p><strong>What is Terraform?</strong><br>Understanding architecture and benefits</p>
+                </div>
+                <div class="agenda-item">
+                    <h4>Part 3</h4>
+                    <p><strong>HCL & Core Concepts</strong><br>Reading and writing Terraform code</p>
+                </div>
+                <div class="agenda-item">
+                    <h4>Part 4</h4>
+                    <p><strong>The Core Workflow</strong><br>Practical live demonstration</p>
+                </div>
+                <div class="agenda-item">
+                    <h4>Part 5</h4>
+                    <p><strong>State Management & Scaling</strong><br>Advanced topics and best practices</p>
+                </div>
+                <div class="agenda-item">
+                    <h4>Practice</h4>
+                    <p><strong>Building infra</strong><br>How to create resources in Terraform</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: The Problem -->
+        <div class="slide slide-content">
+            <h2>The Problem: Manual Infrastructure</h2>
+            <img src="images/img.png" alt="Manual Infrastructure Problems" class="slide-image">
+            <p style="font-size: 1.1em; margin-bottom: 30px;"><strong>The "Old Way" - Manual processes that don't scale</strong></p>
+
+            <h3>ClickOps (Manual UI Configuration)</h3>
+            <ul>
+                <li>Clicking through cloud provider dashboards</li>
+                <li>No audit trail of who changed what and when</li>
+                <li>Difficult to reproduce exactly</li>
+            </ul>
+
+            <h3>Custom Bash/Python Scripts (Imperative)</h3>
+            <ul>
+                <li>Hard to maintain and understand</li>
+                <li>Error-prone due to sequential dependencies</li>
+                <li>Different scripts for different environments</li>
+            </ul>
+
+            <h3>The Core Problems</h3>
+            <div class="highlight">
+                <strong>❌ Inconsistency</strong> between environments<br>
+                <strong>❌ No version control</strong> of infrastructure changes<br>
+                <strong>❌ Slow disaster recovery</strong> (recreating from memory)<br>
+                <strong>❌ "It works on my machine"</strong> equivalent
+            </div>
+        </div>
+
+        <!-- Slide 4: Introduction to IaC -->
+        <div class="slide slide-content">
+            <h2>Introduction to Infrastructure as Code (IaC)</h2>
+
+            <h3>What is IaC?</h3>
+            <div class="highlight">
+                Managing infrastructure through <strong>machine-readable definition files</strong> instead of manual processes
+            </div>
+
+            <h3>Core Benefits</h3>
+            <div class="benefit-grid">
+                <div class="benefit-card">
+                    <strong>📊 Version Control</strong>
+                    Track all changes in Git, see history, collaborate
+                </div>
+                <div class="benefit-card">
+                    <strong>🔄 Repeatability</strong>
+                    Same code = same infrastructure every time
+                </div>
+                <div class="benefit-card">
+                    <strong>⚡ Automation</strong>
+                    Deploy with one command, no manual steps
+                </div>
+                <div class="benefit-card">
+                    <strong>📚 Documentation</strong>
+                    Code IS documentation, always up-to-date
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Declarative vs Imperative -->
+        <div class="slide slide-content">
+            <h2>Declarative vs. Imperative IaC</h2>
+
+            <div class="column-layout">
+                <div>
+                    <div class="comparison-box">
+                        <h4>🚗 Imperative (HOW)</h4>
+                        <p><strong>"Do this, then do that..."</strong></p>
+                        <ul style="margin-top: 15px; margin-left: 20px;">
+                            <li>Step-by-step instructions</li>
+                            <li>Focus on process</li>
+                            <li>Examples: Ansible, bash scripts</li>
+                        </ul>
+                        <div class="code-block" style="margin-top: 15px; font-size: 0.9em;"># Create VPC
+aws ec2 create-vpc
+
+# Create subnet
+aws ec2 create-subnet</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="comparison-box">
+                        <h4>🎯 Declarative (WHAT)</h4>
+                        <p><strong>"I want this end state..."</strong></p>
+                        <ul style="margin-top: 15px; margin-left: 20px;">
+                            <li>Describe desired state</li>
+                            <li>Terraform figures out how</li>
+                            <li>Examples: Terraform, Kubernetes</li>
+                        </ul>
+                        <div class="code-block" style="margin-top: 15px; font-size: 0.9em;">resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">⬇️</div>
+            <p style="text-align: center; font-size: 1.2em;"><strong>Declarative is easier to maintain, understand, and automate</strong></p>
+        </div>
+
+        <!-- Slide 6: Terraform Overview -->
+        <div class="slide slide-content">
+            <h2>Terraform Overview</h2>
+            <img src="images/img_3.png" alt="Terraform Overview" class="slide-image">
+
+            <h3>Key Facts</h3>
+            <ul style="font-size: 1.3em;">
+                <li>Created by <strong>HashiCorp</strong></li>
+                <li>Open-source (under Business Source License and OpenBao)</li>
+                <li><strong>Cloud-agnostic</strong> - works with any provider</li>
+                <li>Uses <strong>HCL (HashiCorp Configuration Language)</strong></li>
+            </ul>
+
+            <h3>Why Terraform Stands Out</h3>
+            <div class="highlight">
+                <strong>🌍 One syntax for everything</strong><br>
+                Deploy to AWS, Azure, GCP, GitHub, Datadog, Kubernetes... all with the same HCL code
+            </div>
+
+            <h3>Current Ecosystem</h3>
+            <ul>
+                <li>Terraform Cloud/Enterprise for team collaboration</li>
+                <li>Hundreds of providers and modules</li>
+                <li>Active community and commercial support</li>
+            </ul>
+        </div>
+
+        <!-- Slide 7: Terraform Architecture -->
+        <div class="slide slide-content">
+            <h2>Terraform Architecture</h2>
+            <img src="images/img_4.png" alt="Terraform Architecture" class="slide-image">
+
+            <h3>The Three Main Components</h3>
+
+            <div class="workflow-step">
+                <strong>📋 Terraform Core</strong>
+                <p style="margin-top: 10px;">Reads your configuration files and the state file</p>
+                <p>Builds a dependency graph to understand resource relationships</p>
+                <p>Plans changes and applies them in the correct order</p>
+            </div>
+
+            <div class="workflow-step">
+                <strong>🔌 Providers</strong>
+                <p style="margin-top: 10px;">Plugins that talk to cloud APIs</p>
+                <p>Each cloud/service has its own provider</p>
+                <p>Examples: aws, azure, google, github, kubernetes, datadog</p>
+            </div>
+
+            <div class="workflow-step">
+                <strong>📦 State File (terraform.tfstate)</strong>
+                <p style="margin-top: 10px;">JSON file mapping your code to real infrastructure</p>
+                <p>Terraform's "memory" of what it created</p>
+                <p>Critical for understanding what's deployed</p>
+            </div>
+
+            <div class="highlight" style="margin-top: 30px;">
+                <strong>Why this matters:</strong> Same HCL workflow for AWS EC2, GitHub repos, Spotify playlists, Datadog monitors, and more!
+            </div>
+        </div>
+
+        <!-- Slide 8: HCL Syntax Basics -->
+        <div class="slide slide-content">
+            <h2>HCL Syntax Basics</h2>
+
+            <h3>Core Concepts</h3>
+            <ul style="font-size: 1.2em;">
+                <li><strong>Blocks:</strong> Containers for configuration (e.g., resource, variable, output)</li>
+                <li><strong>Arguments:</strong> Key-value pairs inside blocks (e.g., instance_type = "t2.micro")</li>
+                <li><strong>Expressions:</strong> Dynamic values (variables, functions, references)</li>
+            </ul>
+
+            <h3>Why HCL is Great</h3>
+            <ul style="margin-top: 20px; font-size: 1.2em;">
+                <li>✅ Extremely readable and human-friendly</li>
+                <li>✅ JSON-compatible (can also write in JSON if you prefer)</li>
+                <li>✅ Consistent across all Terraform code</li>
+            </ul>
+
+            <h3>Simple Example</h3>
+            <div class="code-block">resource "aws_instance" "web" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "web-server"
+  }
+}</div>
+        </div>
+
+        <!-- Slide 9: The Big Three Blocks -->
+        <div class="slide slide-content">
+            <h2>The Big Three Blocks</h2>
+
+            <div class="workflow-step">
+                <strong>provider</strong>
+                <p style="margin-top: 10px;">Tells Terraform who to talk to and how to authenticate</p>
+                <div class="code-block" style="margin-top: 10px; font-size: 0.9em;">provider "aws" {
+  region = "us-east-1"
+}</div>
+            </div>
+
+            <div class="workflow-step">
+                <strong>resource</strong>
+                <p style="margin-top: 10px;">The most important block - creating new infrastructure</p>
+                <p style="margin-top: 5px;">You define WHAT you want to create (EC2, S3, RDS, etc.)</p>
+                <div class="code-block" style="margin-top: 10px; font-size: 0.9em;">resource "aws_s3_bucket" "my_bucket" {
+  bucket = "my-app-bucket"
+}</div>
+            </div>
+
+            <div class="workflow-step">
+                <strong>data</strong>
+                <p style="margin-top: 10px;">Reading existing infrastructure without managing it</p>
+                <p style="margin-top: 5px;">Example: Find the latest Ubuntu AMI automatically</p>
+                <div class="code-block" style="margin-top: 10px; font-size: 0.9em;">data "aws_ami" "ubuntu" {
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-*"]
+  }
+}</div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Making Code Dynamic -->
+        <div class="slide slide-content">
+            <h2>Making Code Dynamic</h2>
+            <img src="images/img_2.png" alt="Code Dynamics" class="slide-image">
+
+            <h3>variable: Inputizing Your Code</h3>
+            <p style="margin-bottom: 15px;">Instead of hardcoding values, accept them as inputs</p>
+            <div class="code-block">variable "instance_type" {
+  type    = string
+  default = "t2.micro"
+}
+
+resource "aws_instance" "web" {
+  instance_type = var.instance_type
+}</div>
+
+            <h3>output: Extracting Data After Deployment</h3>
+            <p style="margin-bottom: 15px;">Terraform shows important values after creating infrastructure</p>
+            <div class="code-block">output "instance_ip" {
+  value = aws_instance.web.public_ip
+}</div>
+
+            <div class="highlight" style="margin-top: 30px;">
+                <strong>Result:</strong> One Terraform configuration for dev, staging, AND production with different variables!
+            </div>
+        </div>
+
+        <!-- Slide 11: The 4-Step Workflow -->
+        <div class="slide slide-content">
+            <h2>The 4-Step Terraform Workflow</h2>
+            <div class="workflow-step">
+                <strong style="color: #9333ea;">1️⃣ terraform init</strong>
+                <p style="margin-top: 10px;"><strong style="color: #123df7;">Downloading providers and initializing the backend</strong></p>
+                <p>Terraform downloads necessary provider plugins</p>
+                <p>Sets up local state or connects to remote state</p>
+            </div>
+
+            <div class="workflow-step">
+                <strong style="color: #22c55e;">2️⃣ terraform plan</strong>
+                <p style="margin-top: 10px;"><strong style="color: #123df7;">The dry-run</strong> - <strong style="color: #123df7;">"What will Terraform do?"</strong></p>
+                <p>Shows <span style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">+ (create)</span> <span style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">~ (modify)</span> <span style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">- (delete)</span> operations</p>
+                <p>Creates an execution plan</p>
+                <p>Allows you to review before applying changes</p>
+            </div>
+
+            <div class="workflow-step">
+                <strong style="color: #22c55e;">3️⃣ terraform apply</strong>
+                <p style="margin-top: 10px;"><strong>Executing the plan</strong></p>
+                <p>Terraform provisions all resources in dependency order</p>
+                <p>Updates the state file with what was created</p>
+            </div>
+
+            <div class="workflow-step">
+                <strong style="color: #ef4444;">4️⃣ terraform destroy</strong>
+                <p style="margin-top: 10px;"><strong>Tearing it all down</strong></p>
+                <p>Deletes all resources Terraform created</p>
+                <p>Asks of confirmation before destruction</p>
+                <p>Helpful for cleanup and cost management</p>
+            </div>
+        </div>
+
+        <!-- Slide 12: Commands cheatsheet -->
+        <div class="slide slide-content">
+            <h2>Commands cheatsheet</h2>
+            <img src="images/img_5.png" alt="Commands cheatsheet" style="width: 90%; max-height: 80vh; object-fit: contain; display: block; margin: 0 auto;">
+        </div>
+
+        <!-- Slide 14: The State File -->
+        <div class="slide slide-content">
+            <h2>The State File (terraform.tfstate)</h2>
+            <img src="images/img_4.png" alt="State File" class="slide-image">
+
+            <h3>What is It?</h3>
+            <ul style="font-size: 1.3em;">
+                <li>A <strong>JSON file</strong> that maps your code to the real world</li>
+                <li>Maps <code style="background: #f0f0f0; padding: 2px 6px;">resource "aws_instance" "web"</code> → actual EC2 instance <code style="background: #f0f0f0; padding: 2px 6px;">i-0123456789abc</code></li>
+                <li>Terraform's <strong>"memory"</strong> of what it created</li>
+            </ul>
+
+            <h3 style="margin-top: 40px;">Example State Entry</h3>
+            <div class="code-block">{
+  "resources": [
+    {
+      "type": "aws_instance",
+      "name": "web",
+      "instances": [
+        {
+          "attributes": {
+            "id": "i-0123456789abc",
+            "public_ip": "54.123.45.67"
+          }
+        }
+      ]
+    }
+  ]
+}</div>
+
+            <h3 style="margin-top: 40px;">⚠️ The Crucial Rule</h3>
+            <div class="highlight">
+                <strong>❌ NEVER commit terraform.tfstate to Git</strong><br>
+                <br>
+                Why?<br>
+                • Contains <strong>secrets and credentials</strong><br>
+                • Causes <strong>team collaboration conflicts</strong><br>
+                • Local state only = no team safety
+            </div>
+        </div>
+
+        <!-- Slide 15: Scaling Terraform (Details) -->
+        <div class="slide slide-content">
+            <h2>Scaling Terraform</h2>
+            <h3>Remote State</h3>
+            <div class="comparison-box" style="background: rgba(18, 61, 247, 0.1); border-color: #123df7; color: #000000;">
+                <strong>☁️ Store state in S3, Azure Storage, or Terraform Cloud</strong>
+                <p style="margin-top: 10px;">Multiple team members can safely work on the same infrastructure</p>
+                <p style="margin-top: 5px;">State locking (via DynamoDB) prevents concurrent modifications</p>
+                <ul style="margin-top: 10px; margin-left: 20px; font-size: 1.1em;">
+                    <li>Everyone reads the same state</li>
+                    <li>Changes are coordinated</li>
+                    <li>Audit trail of who did what</li>
+                </ul>
+            </div>
+
+            <h3 style="margin-top: 30px;">Modules</h3>
+            <div class="comparison-box" style="background: rgba(18, 61, 247, 0.1); border-color: #123df7; color: #000000;">
+                <strong>📦 Reusable blocks of Terraform code (like functions in programming)</strong>
+                <p style="margin-top: 10px;">Write once, use many times across projects</p>
+                <ul style="margin-top: 10px; margin-left: 20px; font-size: 1.1em;">
+                    <li>Avoid repeating code</li>
+                    <li>Enforce best practices</li>
+                    <li>Share across teams</li>
+                    <li>Example: "VPC module" creates VPC + subnets + routing</li>
+                </ul>
+            </div>
+
+            <div class="highlight" style="margin-top: 30px;">
+                <strong>Remote State + Modules = Enterprise-Ready Terraform</strong>
+            </div>
+        </div>
+
+        <!-- Slide 16: Looking Back -->
+        <div class="slide slide-content" style="background: linear-gradient(135deg, #123df7 0%, #000000 100%); color: #000000;">
+            <h2 style="color: #fffeff; border-bottom-color: #fffeff;">Looking Back: Journey Through Terraform</h2>
+
+            <h3 style="color: #fffeff; border-bottom-color: #fffeff;">What we covered</h3>
+            <ul style="font-size: 1.2em; color: #fffeff;">
+                <li><strong>Part 1:</strong> Why manual infrastructure management fails and how IaC solves it</li>
+                <li><strong>Part 2:</strong> Terraform's cloud-agnostic architecture and key components</li>
+                <li><strong>Part 3:</strong> HCL syntax and the core blocks (provider, resource, data, variable, output)</li>
+                <li><strong>Part 4:</strong> The practical workflow: init → plan → apply → destroy</li>
+                <li><strong>Part 5:</strong> State management and scaling with remote state and modules</li>
+            </ul>
+
+            <h3 style="margin-top: 40px; color: #fffeff;">Key Concepts</h3>
+            <div class="benefit-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="benefit-card" style="background: rgba(255, 255, 254, 0.1); border: 1px solid #fffeff;">
+                    <strong style="color: #fffeff;">Declarative Approach</strong>
+                    <span style="color: #fffeff;">Describe the end state, let Terraform figure out how</span>
+                </div>
+                <div class="benefit-card" style="background: rgba(255, 255, 254, 0.1); border: 1px solid #fffeff;">
+                    <strong style="color: #fffeff;">Version Control</strong>
+                    <span style="color: #fffeff;">Infrastructure defined in Git, tracked and auditable</span>
+                </div>
+                <div class="benefit-card" style="background: rgba(255, 255, 254, 0.1); border: 1px solid #fffeff;">
+                    <strong style="color: #fffeff;">Consistency</strong>
+                    <span style="color: #fffeff;">Same code = identical infrastructure every time</span>
+                </div>
+                <div class="benefit-card" style="background: rgba(255, 255, 254, 0.1); border: 1px solid #fffeff;">
+                    <strong style="color: #fffeff;">Automation</strong>
+                    <span style="color: #fffeff;">No manual clicking, full CI/CD integration</span>
+                </div>
+            </div>
+        </div>
+
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">15</span>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="previousSlide()">← Previous</button>
+        <button class="btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+
+            if (n > totalSlides) currentSlide = totalSlides;
+            if (n < 1) currentSlide = 1;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide - 1].classList.add('active');
+
+            document.getElementById('current-slide').textContent = currentSlide;
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>
+
